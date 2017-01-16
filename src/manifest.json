@@ -1,0 +1,21 @@
+{
+    "name": "Hypercore Audit Log",
+    "description": "Record an audit log of browing activity to a hypercore instance for logging/processing outside the browser",
+    "version": "0.0.0",
+    "permissions": [
+        "background",
+        "tabs",
+        "history",
+        "cookies",
+        "downloads",
+        "sessions",
+        "bookmarks",
+        "idle"
+    ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
+    "manifest_version": 2
+}

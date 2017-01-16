@@ -1,0 +1,19 @@
+{
+  "name": "chrome-hypercore-audit",
+  "version": "0.0.0",
+  "description": "Log chrome API events to hypercore",
+  "scripts": {
+    "signalhub": "signalhub listen -p 8080",
+    "peer": "node src/js/replicate.js",
+    "build": "mkdir -p build && browserify src/js/background.js > build/background.js && cp src/manifest.json build"
+  },
+  "dependencies": {
+    "hypercore": "^4.17.1",
+    "memdb": "^1.3.1",
+    "signalhub": "^4.8.0",
+    "webrtc-swarm": "^2.8.0"
+  },
+  "devDependencies": {
+    "browserify": "^13.3.0"
+  }
+}
