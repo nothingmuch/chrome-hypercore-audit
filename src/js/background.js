@@ -58,6 +58,7 @@ Object.keys(categories).forEach(function(category) {
 });
 
 // Replicate
+var pump = require('pump')
 var swarm = require('webrtc-swarm')
 var signalhub = require('signalhub')
 
@@ -70,6 +71,11 @@ var sw = swarm(hub, {});
 sw.on('peer', function(peer, id) {
     console.log('connected to a new peer:', id)
     console.log('total peers:', sw.peers.length)
+    var replstream = feed.replicate({ upload: true })
+    console.log("starting pump");
+    pump(peer, replstream, peer, function (...args) {
+        console.log("pump complete", args)
+    })
 })
 
 sw.on('disconnect', function(peer, id) {
