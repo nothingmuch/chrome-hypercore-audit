@@ -5,7 +5,7 @@
   "scripts": {
     "signalhub": "signalhub listen -p 8080",
     "peer": "node src/js/replicate.js",
-    "build": "mkdir -p build && browserify src/js/background.js > build/background.js && cp src/manifest.json build"
+    "build": "mkdir -p build && browserify --debug src/js/background.js > build/background.js && cp src/manifest.json build"
   },
   "dependencies": {
     "hypercore": "^4.17.1",
