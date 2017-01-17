@@ -62,7 +62,8 @@ var pump = require('pump')
 var swarm = require('webrtc-swarm')
 var signalhub = require('signalhub')
 
-var hub = signalhub('swarm-example', ['http://localhost:8080'])
+console.log("discovering", feed.discoveryKey.toString('hex'))
+var hub = signalhub(feed.discoveryKey.toString('hex'), ['http://localhost:8080'])
 
 console.log(feed.key.toString('hex'))
 
