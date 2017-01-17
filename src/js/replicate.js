@@ -1,6 +1,6 @@
 "use strict";
 
-var key = '2bc930e3487e05bccc234c928a9513a2ed3f2c2e30e59dd2dbae9e7ca5f52e86'
+var key = process.argv[2]
 
 var hypercore = require('hypercore')
 var memdb = require('memdb')
