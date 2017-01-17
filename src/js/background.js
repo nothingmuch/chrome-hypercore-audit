@@ -38,6 +38,14 @@ feed.on('upload', function(block, data) {
     console.log('uploaded block', block, data)
 })
 
+chrome.windows.getAll({ populate: true }, function (windows) {
+    feed.append(JSON.stringify({
+        type: 'snapshot',
+        windows: windows,
+        now: Date.now(),
+    }))
+})
+
 Object.keys(categories).forEach(function(category) {
     console.log("registering", category);
     categories[category].forEach(function(event) {
