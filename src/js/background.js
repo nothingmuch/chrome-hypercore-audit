@@ -31,8 +31,7 @@ var memdb = require('memdb');
 var core = hypercore(memdb());
 var feed = core.createFeed();
 
-
-console.log('key is', feed.key.toString('hex'))
+console.log('feed key is', feed.key.toString('hex'))
 
 feed.on('upload', function(block, data) {
     console.log('uploaded block', block, data)
@@ -59,7 +58,6 @@ Object.keys(categories).forEach(function(category) {
             });
             feed.append(msg, function() {
                 console.log("appended", msg);
-                console.log('key is', feed.key.toString('hex'));
             });
         });
     });
