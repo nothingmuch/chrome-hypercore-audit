@@ -3,9 +3,11 @@
 var key = process.argv[2]
 
 var hypercore = require('hypercore')
-var memdb = require('memdb')
 
-var core = hypercore(memdb())
+// var db = require('memdb')()
+var db = require('level-browserify')('data')
+
+var core = hypercore(db)
 var feed = core.createFeed(key)
 
 var swarm = require('webrtc-swarm')
