@@ -2,31 +2,59 @@
 
 Audit chrome API events into a hypercore feed.
 
-* Building
+* Using
 
-Build chrome extension:
+** Building
 
-#+BEGIN_SRC sh
-npm run build
-#+END_SRC
+ Build chrome extension:
 
-* Running
+ #+BEGIN_SRC sh
+ npm run build
+ #+END_SRC
 
-** WebRTC Signalling
+** Running
 
-Start a signalhub webrtc signalling server on port 8080:
+*** WebRTC Signalling
 
-#+BEGIN_SRC sh
-npm run signalhub
-#+END_SRC
+ Start a signalhub webrtc signalling server on port 8080:
 
-** node peer
+ #+BEGIN_SRC sh
+ npm run signalhub
+ #+END_SRC
 
-#+BEGIN_SRC sh
-node src/js/replicate.js
-#+END_SRC
+*** Browser
 
-** Browser
+ Install chrome extension (load =build= directory as unpacked extension), and
+ click on background page to see console, which will list a meta feed key.
 
-Install chrome extension (load =build= directory as unpacked extension), and
-click on background page to see console.
+Each new session's events are logged to a separate hypercore, whose private key
+is not saved. The public keys of these session feedss are logged to the meta
+feed.
+
+*** node peer
+
+Given a key, replicates it to the local directory ~archive~, under the name
+'root', and replicates all feeds listed in the root.
+
+ #+BEGIN_SRC sh
+ node run peer [feed key]
+ #+END_SRC
+
+- [ ] proper CLI frontend
+- [ ] work around electron dependency? at least make it optional?
+
+* Hacking
+
+** Background page
+
+Logs chrome API events to hypercore, and replicates
+
+- [ ] Port to [[https://github.com/mozilla/webextension-polyfill][web extension polyfill]]
+
+** Options page
+- [ ] Control event
+- [ ] opt in signalhub via mdns, configurable signalhub
+
+** Popup.html
+- [ ] http://hypothes.is knock off
+- [ ] org-capture knock off
