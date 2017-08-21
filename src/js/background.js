@@ -25,70 +25,122 @@ var categories = {
     "idle": ["StateChanged"]
 };
 
+var pump = require('pump');
+var swarm = require('webrtc-swarm');
+var signalhub = require('signalhub');
+
 var hypercore = require('hypercore');
-var memdb = require('memdb');
+var crypto = require('hypercore/lib/crypto');
 
-var core = hypercore(memdb());
-var feed = core.createFeed();
+var rai = require('random-access-idb');
 
-console.log('feed key is', feed.key.toString('hex'))
+var metadata = hypercore(rai('feeds'), { storeSecretKey: true, live: true, createIfMissing: true, overwrite: false });
 
-feed.on('upload', function(block, data) {
-    console.log('uploaded block', block, data)
-})
+var cores = {};
 
-chrome.windows.getAll({ populate: true }, function (windows) {
-    feed.append(JSON.stringify({
-        type: 'snapshot',
-        windows: windows,
-        now: Date.now(),
-    }))
-})
+metadata.on('ready', function() {
+    var keypair = crypto.keyPair();
 
-Object.keys(categories).forEach(function(category) {
-    console.log("registering", category);
-    categories[category].forEach(function(event) {
-        console.log("registering", category, event);
-        chrome[category]["on" + event].addListener(function(...args) {
-            var msg = JSON.stringify({
-                category: category,
-                event: event,
-                args: args,
-                now: Date.now()
-            });
-            feed.append(msg, function() {
-                console.log("appended", msg);
+    console.log('keypair', keypair.publicKey.toString('hex'));
+
+    var session = hypercore(rai(keypair.publicKey.toString('hex')), keypair.publicKey, {
+        live: true,
+        valueEncoding: 'json',
+        secretKey: keypair.secretKey,
+        storeSecretKey: false,
+    });
+
+    cores[keypair.publicKey] = session
+
+    session.on('ready', function() {
+        console.log("appending", session.key.toString('hex'))
+        metadata.append(session.key)
+
+        replicate(session);
+
+        register(function(event){ session.append(event) });
+    });
+
+    replicate(metadata);
+
+    console.log("blocks in metadata:", metadata.length)
+    for ( var i = metadata.length; i >= 0 && metadata.has(i); i-- ) {
+        var b = i;
+        console.log("var block", b)
+        metadata.get(i, null, function(err, pubkey) {
+            console.log("var block", b, err, pubkey.toString('hex'))
+             if (!cores[pubkey]) {
+                 // TODO clear, close & destroy after n replication acks on this core
+                 console.log("serving", pubkey)
+                 replicate(cores[pubkey] = hypercore(rai(pubkey.toString('hex')), pubkey, { createIfMissing: false }));
+             }
+         })
+     }
+
+    console.log('meta feed key is', metadata.key.toString('hex'))
+    metadata.on('upload', function(block, data) {
+        console.log('uploaded block', block, data)
+    });
+
+});
+
+
+
+function register(f) {
+    chrome.windows.getAll({ populate: true }, function (windows) {
+        f({
+            type: 'snapshot',
+            windows: windows,
+            now: Date.now(),
+        })
+    })
+
+    Object.keys(categories).forEach(function(category) {
+        console.log("registering", category);
+        categories[category].forEach(function(event) {
+            console.log("registering", category, event);
+            chrome[category]["on" + event].addListener(function(...args) {
+                f({
+                    category: category,
+                    event: event,
+                    args: args,
+                    now: Date.now()
+                });
             });
         });
     });
-});
+}
 
-// Replicate
-var pump = require('pump')
-var swarm = require('webrtc-swarm')
-var signalhub = require('signalhub')
+function replicate(feed) {
+    console.log("discovering", feed.discoveryKey.toString('hex'))
+    var hub = signalhub(feed.discoveryKey.toString('hex'), ['http://localhost:8080'])
 
-console.log("discovering", feed.discoveryKey.toString('hex'))
-var hub = signalhub(feed.discoveryKey.toString('hex'), ['http://localhost:8080'])
+    console.log("feed key", feed.key.toString('hex'))
 
-console.log(feed.key.toString('hex'))
+    var sw = swarm(hub, {});
 
-var sw = swarm(hub, {});
+    sw.on('peer', function(peer, id) {
+        console.log('connected to a new peer:', id)
+        console.log('total peers:', sw.peers.length)
 
-sw.on('peer', function(peer, id) {
-    console.log('connected to a new peer:', id)
-    console.log('total peers:', sw.peers.length)
-    var replstream = feed.replicate({ upload: true })
-    console.log("starting pump");
-    pump(peer, replstream, peer, function (...args) {
-        console.log("pump complete", args)
+        var prevUpdateEnd = peer._updateEnd
+        peer._updateEnd = function() {
+            prevUpdateEnd.call(this)
+            console.log("After update end remote bitfield is ", peer.remoteBitField)
+        };
+
+        var replstream = feed.replicate({ encrypt: false, upload: true, download: false, live: true })
+        console.log("starting pump");
+        pump(peer, replstream, peer, function (...args) {
+            console.log("pump complete", args)
+        })
     })
-})
 
-sw.on('disconnect', function(peer, id) {
-    console.log('disconnected from a peer:', id)
-    console.log('total peers:', sw.peers.length)
-})
+    sw.on('disconnect', function(peer, id) {
+        console.log('disconnected from a peer:', id)
+        console.log('total peers:', sw.peers.length)
+    })
+}
 
 
 /* no worky - hyperdiscovery had webrtc support removed, and now tries
@@ -106,3 +158,5 @@ sw.on('connection', function (peer, type) {
     })
 })
 */
+
+
